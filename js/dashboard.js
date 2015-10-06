@@ -1,10 +1,19 @@
-﻿var domain = "http://dinova-uat.azurewebsites.net/";
+﻿var dashboard = dashboard || {};
 
-formatPhone = function (s) {
-    if (s != null && s != "") {
-        return "(" + s.substr(0, 3) + ") " + s.substr(3, 3) + " - " + s.substr(6, 4);
-    }
-}
+(function ($, window, document) {
 
+	dashboard.area = [];
+	dashboard.subject = [];
+	dashboard.grade = [];
+	dashboard.poverty = [];
+	dashboard.resource = [];
+	dashboard.projstatus = [];
 
-$(".change-password").click(function () { $(document).trigger("CHANGE_PASSWORD"); });
+	$(".filter-area").click(function () {
+	    var self = this;
+	    var key = $(this).attr("data-key");
+	    $("#filter-area").slideToggle();
+	    $("#filter-" + key).slideToggle();
+	});    
+        
+}(window.jQuery, window, document));
