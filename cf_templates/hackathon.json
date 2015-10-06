@@ -875,7 +875,7 @@
         "KeyName": "hackathon",
         "SecurityGroups": [
           {
-            "Ref": "AppSG"
+            "Ref": "WebSG"
           }
         ],
         "IamInstanceProfile": {
