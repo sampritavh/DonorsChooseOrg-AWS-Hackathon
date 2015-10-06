@@ -1,0 +1,1262 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "donorschoose stack",
+  "Parameters": {
+    "DBSnapshotName": {
+      "Default": "",
+      "ConstraintDescription": "",
+      "Type": "String",
+      "Description": "Optional: DB Snapshot identifier to be used to create RDS instance"
+    },
+    "IsMultiAZ": {
+      "Default": false,
+      "ConstraintDescription": "",
+      "Type": "String",
+      "Description": "True if the DB is Multi AZ. By default it is false"
+    },
+    "AppServerAMI": {
+      "Default": "ami-xxxx",
+      "ConstraintDescription": "must be a valid ami.",
+      "Type": "String",
+      "Description": "AMI id for AppServerAMI"
+    },
+    "WebServerAMI": {
+      "Default": "ami-xxxx",
+      "ConstraintDescription": "must be a valid ami.",
+      "Type": "String",
+      "Description": "AMI id for WebServerAMI"
+    }
+  },
+  "Mappings": {
+    "NATAMI": {
+      "us-west-2": {
+        "AMI": "ami-290f4119"
+      }
+    }
+  },
+  "Resources": {
+    "Vpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "EnableDnsSupport": true,
+        "CidrBlock": "10.10.0.0/16",
+        "EnableDnsHostnames": true,
+        "Tags": [
+          {
+            "Value": {
+              "Ref": "AWS::StackName"
+            },
+            "Key": "Name"
+          }
+        ]
+      }
+    },
+    "PublicRT": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "Tags": [
+          {
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "PublicRT"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ]
+      }
+    },
+    "PrivateRT": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "Tags": [
+          {
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "PrivateRT"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ]
+      }
+    },
+    "PublicSubnet0": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "Tags": [
+          {
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "PublicSubnet0"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ],
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "CidrBlock": "10.10.6.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "PublicSubnet0Association": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PublicSubnet0"
+        },
+        "RouteTableId": {
+          "Ref": "PublicRT"
+        }
+      }
+    },
+    "PublicSubnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "Tags": [
+          {
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "PublicSubnet1"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ],
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "CidrBlock": "10.10.61.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "PublicSubnet1Association": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PublicSubnet1"
+        },
+        "RouteTableId": {
+          "Ref": "PublicRT"
+        }
+      }
+    },
+    "PrivateSubnet0": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "Tags": [
+          {
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "PrivateSubnet0"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ],
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "CidrBlock": "10.10.2.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "PrivateSubnet0Association": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PrivateSubnet0"
+        },
+        "RouteTableId": {
+          "Ref": "PrivateRT"
+        }
+      }
+    },
+    "PrivateSubnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "Tags": [
+          {
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "PrivateSubnet1"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ],
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "CidrBlock": "10.10.21.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "PrivateSubnet1Association": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PrivateSubnet1"
+        },
+        "RouteTableId": {
+          "Ref": "PrivateRT"
+        }
+      }
+    },
+    "InternetGateway": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "InternetGateway"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ]
+      }
+    },
+    "AttachIgw": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "InternetGatewayId": {
+          "Ref": "InternetGateway"
+        }
+      }
+    },
+    "PublicRTIgwRoute": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "GatewayId": {
+          "Ref": "InternetGateway"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "RouteTableId": {
+          "Ref": "PublicRT"
+        }
+      },
+      "DependsOn": "AttachIgw"
+    },
+    "AppServerENI": {
+      "Type": "AWS::EC2::NetworkInterface",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PrivateSubnet0"
+        },
+        "GroupSet": [
+          {
+            "Ref": "AppSG"
+          }
+        ],
+        "Description": "ENI for AppServer",
+        "Tags": [
+          {
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "AppServerENI"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ]
+      }
+    },
+    "WSEIP": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      },
+      "DependsOn": "AttachIgw"
+    },
+    "NatEIP": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      },
+      "DependsOn": "AttachIgw"
+    },
+    "NATSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "SecurityGroupIngress": [
+          {
+            "ToPort": "65535",
+            "IpProtocol": "-1",
+            "CidrIp": "10.0.0.0/8",
+            "FromPort": "0"
+          },
+          {
+            "ToPort": "22",
+            "IpProtocol": "tcp",
+            "CidrIp": "10.0.0.0/8",
+            "FromPort": "22"
+          }
+        ],
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "GroupDescription": "NAT Security Group",
+        "Tags": [
+          {
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "NATSecurityGroup"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ]
+      }
+    },
+    "AppSGWebSG8080": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "ToPort": "80",
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "WebSG",
+            "GroupId"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "AppSG",
+            "GroupId"
+          ]
+        },
+        "FromPort": "80"
+      }
+    },
+    "AppSGWebSG443443": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "ToPort": "443",
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "WebSG",
+            "GroupId"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "AppSG",
+            "GroupId"
+          ]
+        },
+        "FromPort": "443"
+      }
+    },
+    "AppSG": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "SecurityGroupIngress": [
+          {
+            "ToPort": "22",
+            "IpProtocol": "tcp",
+            "CidrIp": "10.0.0.0/8",
+            "FromPort": "22"
+          }
+        ],
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "GroupDescription": "Web Service Security Group",
+        "Tags": [
+          {
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "AppSG"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ]
+      }
+    },
+    "WebSG": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "SecurityGroupIngress": [
+          {
+            "ToPort": "80",
+            "IpProtocol": "tcp",
+            "CidrIp": "0.0.0.0/0",
+            "FromPort": "80"
+          },
+          {
+            "ToPort": "443",
+            "IpProtocol": "tcp",
+            "CidrIp": "0.0.0.0/0",
+            "FromPort": "443"
+          }
+        ],
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "GroupDescription": "ELB Security Group",
+        "Tags": [
+          {
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "WebSG"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ]
+      }
+    },
+    "DBSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "SecurityGroupIngress": [
+          {
+            "ToPort": "5432",
+            "IpProtocol": "tcp",
+            "CidrIp": "10.0.0.0/8",
+            "FromPort": "5432"
+          }
+        ],
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "GroupDescription": "DB Security Group",
+        "Tags": [
+          {
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "DBSecurityGroup"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ]
+      }
+    },
+    "WebServerRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "ManageRoutes",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Action": [
+                    "ec2:DescribeAddresses",
+                    "ec2:AssociateAddress",
+                    "ec2:AssociateRouteTable",
+                    "ec2:DeleteRoute",
+                    "ec2:CreateRoute",
+                    "ec2:DescribeRouteTables",
+                    "ec2:ReplaceRoute",
+                    "ec2:ModifyInstanceAttribute"
+                  ],
+                  "Resource": "*",
+                  "Effect": "Allow"
+                }
+              ]
+            }
+          }
+        ],
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "WebServerProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "WebServerRole"
+          }
+        ]
+      }
+    },
+    "AppInstanceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "AttachENI",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Action": [
+                    "ec2:AttachNetworkInterface",
+                    "ec2:DescribeNetworkInterfaces",
+                    "ec2:DetachNetworkInterface"
+                  ],
+                  "Resource": "*",
+                  "Effect": "Allow"
+                }
+              ]
+            }
+          }
+        ],
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "AppInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "AppInstanceRole"
+          }
+        ]
+      }
+    },
+    "NATInstanceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "ManageRoutes",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Action": [
+                    "ec2:DescribeAddresses",
+                    "ec2:AssociateAddress",
+                    "ec2:AssociateRouteTable",
+                    "ec2:DeleteRoute",
+                    "ec2:CreateRoute",
+                    "ec2:DescribeRouteTables",
+                    "ec2:ReplaceRoute",
+                    "ec2:ModifyInstanceAttribute"
+                  ],
+                  "Resource": "*",
+                  "Effect": "Allow"
+                }
+              ]
+            }
+          }
+        ],
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "NATInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "NATInstanceRole"
+          }
+        ]
+      }
+    },
+    "AppServerLc": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xv\n",
+                "exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1\n",
+                "STACK_NAME=",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                "\n",
+                "REGION=",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "\n",
+                "INS_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)\n",
+                "ENI_ID=",
+                {
+                  "Ref": "AppServerENI"
+                },
+                "\n",
+                "eni_status=$(aws --region $REGION ec2 describe-network-interfaces --network-interface-ids $ENI_ID --query NetworkInterfaces[0].Status)\n",
+                "while [ \"$eni_status\" != \"\\\"available\\\"\" ]\n",
+                "do \n",
+                "   ATTACHMENT_ID=$(aws --region $REGION ec2 describe-network-interfaces --network-interface-ids $ENI_ID --query NetworkInterfaces[0].Attachment.AttachmentId)\n",
+                "   aws --region $REGION ec2 detach-network-interface --attachment-id $ATTACHMENT_ID \n",
+                "   sleep 10 \n",
+                "   eni_status=$(aws --region $REGION ec2 describe-network-interfaces --network-interface-ids $ENI_ID --query NetworkInterfaces[0].Status)\n",
+                "done \n",
+                "aws --region $REGION ec2 attach-network-interface --network-interface-id $ENI_ID --instance-id $INS_ID --device-index 1\n"
+              ]
+            ]
+          }
+        },
+        "ImageId": {
+          "Ref": "AppServerAMI"
+        },
+        "KeyName": "hackathon",
+        "SecurityGroups": [
+          {
+            "Ref": "AppSG"
+          }
+        ],
+        "IamInstanceProfile": {
+          "Ref": "AppInstanceProfile"
+        },
+        "InstanceType": "t2.micro",
+        "AssociatePublicIpAddress": false
+      }
+    },
+    "AppServerASG": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "MinSize": 1,
+        "Tags": [
+          {
+            "PropagateAtLaunch": "true",
+            "Value": true,
+            "Key": "EnableDeploy"
+          },
+          {
+            "PropagateAtLaunch": "true",
+            "Value": true,
+            "Key": "EnableBackup"
+          },
+          {
+            "PropagateAtLaunch": "true",
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "AppServer"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ],
+        "MaxSize": 1,
+        "HealthCheckGracePeriod": "600",
+        "DesiredCapacity": 1,
+        "LaunchConfigurationName": {
+          "Ref": "AppServerLc"
+        },
+        "VPCZoneIdentifier": [
+          {
+            "Ref": "PrivateSubnet0"
+          }
+        ],
+        "AvailabilityZones": [
+          {
+            "Fn::Select": [
+              0,
+              {
+                "Fn::GetAZs": {
+                  "Ref": "AWS::Region"
+                }
+              }
+            ]
+          }
+        ],
+        "HealthCheckType": "EC2"
+      },
+      "DependsOn": "NATServerASG"
+    },
+    "WebServerLc": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xv\n",
+                "exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1\n",
+                "STACK_NAME=",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                "\n",
+                "INS_ID=`curl http://169.254.169.254/latest/meta-data/instance-id`\n",
+                "REGION=",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "\n",
+                "VPC_ID=",
+                {
+                  "Ref": "Vpc"
+                },
+                "\n",
+                "EIP=",
+                {
+                  "Ref": "WSEIP"
+                },
+                "\n",
+                "EIP_ALLOC=`aws ec2 describe-addresses --public-ips $EIP --region $REGION --output text --query Addresses[*].AllocationId`\n",
+                "aws ec2 associate-address --instance-id $INS_ID --allocation-id  $EIP_ALLOC  --region $REGION --allow-reassociation\n"
+              ]
+            ]
+          }
+        },
+        "ImageId": {
+          "Ref": "WebServerAMI"
+        },
+        "KeyName": "hackathon",
+        "SecurityGroups": [
+          {
+            "Ref": "AppSG"
+          }
+        ],
+        "IamInstanceProfile": {
+          "Ref": "WebServerProfile"
+        },
+        "InstanceType": "t2.micro",
+        "AssociatePublicIpAddress": true
+      }
+    },
+    "WebServerASG": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "MinSize": 1,
+        "Tags": [
+          {
+            "PropagateAtLaunch": "true",
+            "Value": true,
+            "Key": "EnableDeploy"
+          },
+          {
+            "PropagateAtLaunch": "true",
+            "Value": true,
+            "Key": "EnableBackup"
+          },
+          {
+            "PropagateAtLaunch": "true",
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "WebServer"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ],
+        "MaxSize": 1,
+        "HealthCheckGracePeriod": "600",
+        "DesiredCapacity": 1,
+        "LaunchConfigurationName": {
+          "Ref": "WebServerLc"
+        },
+        "VPCZoneIdentifier": [
+          {
+            "Ref": "PublicSubnet1"
+          },
+          {
+            "Ref": "PublicSubnet0"
+          }
+        ],
+        "AvailabilityZones": [
+          {
+            "Fn::Select": [
+              1,
+              {
+                "Fn::GetAZs": {
+                  "Ref": "AWS::Region"
+                }
+              }
+            ]
+          },
+          {
+            "Fn::Select": [
+              0,
+              {
+                "Fn::GetAZs": {
+                  "Ref": "AWS::Region"
+                }
+              }
+            ]
+          }
+        ],
+        "HealthCheckType": "EC2"
+      },
+      "DependsOn": "NATServerASG"
+    },
+    "NATServerLc": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash \n",
+                "exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1 \n",
+                "yum -y update\n",
+                "/opt/aws/bin/cfn-init -s ",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                " -r NATServerASG  --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "\n",
+                "INS_ID=`curl http://169.254.169.254/latest/meta-data/instance-id`\n",
+                "REGION=",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "\n",
+                "VPC_ID=",
+                {
+                  "Ref": "Vpc"
+                },
+                "\n",
+                "PRIVATE_RT=",
+                {
+                  "Ref": "PrivateRT"
+                },
+                "\n",
+                "EIP=",
+                {
+                  "Ref": "NatEIP"
+                },
+                "\n",
+                "for RT_ID in $PRIVATE_RT\n",
+                "do\n",
+                "aws ec2 delete-route   --destination-cidr-block 0.0.0.0/0 --route-table-id $RT_ID --region $REGION\n",
+                "aws ec2 create-route --route-table-id $RT_ID --destination-cidr-block 0.0.0.0/0 --instance-id $INS_ID --region $REGION\n",
+                "done\n",
+                "EIP_ALLOC=`aws ec2 describe-addresses --public-ips $EIP --region $REGION --output text --query Addresses[*].AllocationId`\n",
+                "aws ec2 associate-address --instance-id $INS_ID --allocation-id  $EIP_ALLOC  --region $REGION --allow-reassociation\n",
+                "aws ec2 modify-instance-attribute --instance-id $INS_ID --source-dest-check \"{\\\"Value\\\": false}\" --region $REGION\n",
+                "/opt/aws/bin/cfn-signal -e 0 --stack ",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                " --resource NATServerASG --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "\n"
+              ]
+            ]
+          }
+        },
+        "KeyName": "hackathon",
+        "SecurityGroups": [
+          {
+            "Ref": "NATSecurityGroup"
+          }
+        ],
+        "IamInstanceProfile": {
+          "Ref": "NATInstanceProfile"
+        },
+        "InstanceType": "t2.micro",
+        "AssociatePublicIpAddress": true,
+        "ImageId": {
+          "Fn::FindInMap": [
+            "NATAMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        }
+      }
+    },
+    "NATServerASG": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "MinSize": 1,
+        "Tags": [
+          {
+            "PropagateAtLaunch": "true",
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "NATServer"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ],
+        "MaxSize": 1,
+        "HealthCheckGracePeriod": "600",
+        "DesiredCapacity": 1,
+        "LaunchConfigurationName": {
+          "Ref": "NATServerLc"
+        },
+        "VPCZoneIdentifier": [
+          {
+            "Ref": "PublicSubnet1"
+          },
+          {
+            "Ref": "PublicSubnet0"
+          }
+        ],
+        "AvailabilityZones": [
+          {
+            "Fn::Select": [
+              1,
+              {
+                "Fn::GetAZs": {
+                  "Ref": "AWS::Region"
+                }
+              }
+            ]
+          },
+          {
+            "Fn::Select": [
+              0,
+              {
+                "Fn::GetAZs": {
+                  "Ref": "AWS::Region"
+                }
+              }
+            ]
+          }
+        ],
+        "HealthCheckType": "EC2"
+      },
+      "CreationPolicy": {
+        "ResourceSignal": {
+          "Count": "1",
+          "Timeout": "PT15M"
+        }
+      }
+    },
+    "DBSubnetGroup": {
+      "Type": "AWS::RDS::DBSubnetGroup",
+      "Properties": {
+        "SubnetIds": [
+          {
+            "Ref": "PrivateSubnet0"
+          },
+          {
+            "Ref": "PrivateSubnet1"
+          }
+        ],
+        "DBSubnetGroupDescription": "Subnet group for sample Mysql Database"
+      }
+    },
+    "donorschoose": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "Engine": "postgres",
+        "MultiAZ": {
+          "Ref": "IsMultiAZ"
+        },
+        "Tags": [
+          {
+            "Value": "true",
+            "Key": "EnableBackup"
+          },
+          {
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "donorschoose"
+                ]
+              ]
+            },
+            "Key": "Name"
+          }
+        ],
+        "MasterUsername": {
+          "Fn::If": [
+            "UseDBSnapshot",
+            {
+              "Ref": "AWS::NoValue"
+            },
+            "DChooseNextGenDB"
+          ]
+        },
+        "MasterUserPassword": {
+          "Fn::If": [
+            "UseDBSnapshot",
+            {
+              "Ref": "AWS::NoValue"
+            },
+            "DonorsChooseHackHack"
+          ]
+        },
+        "VPCSecurityGroups": [
+          {
+            "Ref": "DBSecurityGroup"
+          }
+        ],
+        "DBSnapshotIdentifier": {
+          "Fn::If": [
+            "UseDBSnapshot",
+            {
+              "Ref": "DBSnapshotName"
+            },
+            {
+              "Ref": "AWS::NoValue"
+            }
+          ]
+        },
+        "AllocatedStorage": {
+          "Fn::If": [
+            "UseDBSnapshot",
+            {
+              "Ref": "AWS::NoValue"
+            },
+            5
+          ]
+        },
+        "EngineVersion": "9.4.1",
+        "DBInstanceClass": "db.t2.micro",
+        "DBSubnetGroupName": {
+          "Ref": "DBSubnetGroup"
+        },
+        "DBName": {
+          "Fn::If": [
+            "UseDBSnapshot",
+            {
+              "Ref": "AWS::NoValue"
+            },
+            "DChooseNextGen"
+          ]
+        },
+        "DBInstanceIdentifier": {
+          "Fn::Join": [
+            "-",
+            [
+              {
+                "Ref": "AWS::StackName"
+              },
+              "RDS"
+            ]
+          ]
+        },
+        "BackupRetentionPeriod": 7
+      },
+      "DeletionPolicy": "Snapshot"
+    }
+  },
+  "Outputs": {
+    "VPCId": {
+      "Value": {
+        "Ref": "Vpc"
+      }
+    },
+    "AppServerAddress": {
+      "Value": {
+        "Fn::GetAtt": [
+          "AppServerENI",
+          "PrimaryPrivateIpAddress"
+        ]
+      }
+    },
+    "WSEIPAddress": {
+      "Value": {
+        "Ref": "WSEIP"
+      }
+    },
+    "NatEIPAddress": {
+      "Value": {
+        "Ref": "NatEIP"
+      }
+    }
+  },
+  "Conditions": {
+    "UseDBSnapshot": {
+      "Fn::Not": [
+        {
+          "Fn::Equals": [
+            {
+              "Ref": "DBSnapshotName"
+            },
+            ""
+          ]
+        }
+      ]
+    }
+  }
+}
